@@ -4,7 +4,6 @@ package app.user;
 import app.utils.*;
 import app.ride.*;
 import com.google.gson.Gson;
-import com.google.gson.Gson;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 import java.security.Key;
@@ -12,7 +11,6 @@ import static app.utils.RequestUtils.*;
 import io.jsonwebtoken.*;
 import org.mindrot.jbcrypt.*;
 import spark.*;
-import java.util.*;
 
 
 public class UserController{
@@ -27,20 +25,19 @@ public class UserController{
 		return hashedPassword.equals(user.getHashedPassword());
 	}
 	
-	public static boolean ensureUserIsLoggedIn(Request request) {
+	public static String ensureUserIsLoggedIn(Request request) {
 		String auth_token = request.headers("x-auth-token");
 		try {
-			String json = Jwts.parser().setSigningKey(DatatypeConverter.parseBase64Binary("MySecret")).parsePlaintextJwt(auth_token).getBody();
-			Gson gson = new Gson();
-			UsernameToken tk = gson.fromJson(json, UsernameToken.class);
-			String username = tk.getUsername();
+			Jws<Claims> claims = Jwts.parser().setSigningKey(DatatypeConverter.parseBase64Binary("MySecret")).parseClaimsJws(auth_token);
+			String username = (String)claims.getBody().get("username");
 			User user = UserData.getUser(username);
 			if(user!=null)
-				return true;
-			return false;
+				return username;
+			return "";
 		}
 		catch(Exception e) {
 			System.out.println(e.toString());
+			return "";
 		}
 	}
 	
@@ -59,8 +56,9 @@ public class UserController{
 	    //We will sign our JWT with our ApiKey secret
 	    byte[] apiKeySecretBytes = DatatypeConverter.parseBase64Binary("MySecret");
 	    Key signingKey = new SecretKeySpec(apiKeySecretBytes, signatureAlgorithm.getJcaName());
+		
 	    
-	    JwtBuilder builder = Jwts.builder().setPayload(new Gson().toJson(new UsernameToken(user.getUsername()))).signWith(signatureAlgorithm, signingKey);
+	    JwtBuilder builder = Jwts.builder().claim("username", user.getUsername()).signWith(signatureAlgorithm, signingKey);
 	    
 	    response.status(200);
 	    response.body(builder.compact());
@@ -68,13 +66,81 @@ public class UserController{
 	};
 	
 	public static Route fetchRideFare = (Request request, Response response) -> {
-		if(ensureUserIsLoggedIn(request)) {
+		String username = ensureUserIsLoggedIn(request);
+		if(!username.isEmpty()) {
 			
 			// Create a new ride with status 0
 			Ride ride = new Ride(Double.parseDouble(request.queryParams("sLat")), 
 					Double.parseDouble(request.queryParams("sLong")), 
 					Double.parseDouble(request.queryParams("dLat")), 
 					Double.parseDouble(request.queryParams("dLong")));
+			
+			String id = RideData.createRideAndGetId(ride);
+			double fare = ride.getFare();
+			
+			response.status(200);
+			response.body(new Gson().toJson(new RideWithFare(id, fare)));
+			return response.body();
 		}
+		response.status(403);
+		response.body("Login!!!");
+		return response.body();
+	};
+	
+	public static Route bookRide = (Request request, Response response) -> {
+		String username = ensureUserIsLoggedIn(request);
+		if(!username.isEmpty()) {
+			
+			String id = request.queryParams("id");
+			// Change Ride's status to booked
+			RideData.updateStatus(id, 1);
+			// Add ride to customer's entry
+			UserData.setRide(username, id);
+			response.status(200);
+			response.body("Ride booked successfully!!!");
+			return response.body();
+		}
+		response.status(403);
+		response.body("Login!!!");
+		return response.body();
+	};
+	
+	public static Route updateRideDestination = (Request request, Response response) -> {
+		String username = ensureUserIsLoggedIn(request);
+		if(!username.isEmpty()) {
+			
+			String id = request.queryParams("id");
+			
+			// Update destination and get the updated Fare
+			double updatedFare = RideData.updateDestination(id, Double.parseDouble(request.queryParams("dLat")), Double.parseDouble(request.queryParams("dLong")));
+			
+			response.status(200);
+			response.body("Updated Fare: "+updatedFare);
+			return response.body();
+		}
+		response.status(403);
+		response.body("Login!!!");
+		return response.body();
+	};
+	
+	public static Route finishRide = (Request request, Response response) -> {
+		String username = ensureUserIsLoggedIn(request);
+		if(!username.isEmpty()) {
+			
+			String id = request.queryParams("id");
+			
+			// Delete the ride from Ride's database
+			RideData.finishRide(id);
+			
+			//Delete the ride from user
+			UserData.finishRide(username);
+			
+			response.status(200);
+			response.body("Ride Finished!");
+			return response.body();
+		}
+		response.status(403);
+		response.body("Login!!!");
+		return response.body();
 	};
 }

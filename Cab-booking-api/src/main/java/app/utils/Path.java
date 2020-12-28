@@ -5,9 +5,9 @@ public class Path{
 	public static class Web{
 		
 		public static final String USER_LOGIN = "/user/login/";
-		public static final String USER_RIDE = "/user/ride";
-		public static final String DRIVER_LOGIN = "/driver/login";
-		public static final String DRIVER_RIDE = "/driver/ride";
+		public static final String USER_RIDE = "/user/ride/";
+		public static final String DRIVER_LOGIN = "/driver/login/";
+		public static final String DRIVER_RIDE = "/driver/ride/";
 		
 		public static String getUserLogin() {
 			return USER_LOGIN;
