@@ -15,7 +15,6 @@ public class Application{
 		
 		//Configure the server port
 		port(3000);
-		staticFiles.location("/public");
 		
 
         // Set up before-filters
