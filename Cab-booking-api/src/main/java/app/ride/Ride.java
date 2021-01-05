@@ -1,5 +1,7 @@
 package app.ride;
 
+import app.utils.DistanceMetric;
+
 public class Ride{
 	
 	double sourceLatitude, sourceLongitude, destinationLatitude, destinationLongitude;
@@ -54,7 +56,7 @@ public class Ride{
 	}
 	
 	private void updateFare() {
-		double km = 11.0*(Math.abs(destinationLatitude - sourceLatitude) + Math.abs(destinationLongitude - sourceLongitude));
+		double km = DistanceMetric.getDistance(sourceLatitude, sourceLongitude, destinationLatitude, destinationLongitude);
 		km *= 5;
 		km += 20;
 		km += (5/100)*km;

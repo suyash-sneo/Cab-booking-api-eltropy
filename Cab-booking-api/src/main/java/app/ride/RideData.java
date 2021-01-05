@@ -41,8 +41,7 @@ public class RideData {
 		double minDistance = Double.MAX_VALUE;
 		for(Document document: rideobj) {
 			System.out.println(document.get("_id").toString());
-			double distance = Math.abs(latitude - document.getDouble("sourceLatitude")) + Math.abs(longitude - document.getDouble("sourceLongitude"));
-			System.out.println(distance);
+			double distance = DistanceMetric.getDistance(latitude, longitude, document.getDouble("sourceLatitude"), document.getDouble("sourceLongitude"));
 			if(distance<minDistance) {
 				minDistance = distance;
 				minId = document.get("_id").toString();

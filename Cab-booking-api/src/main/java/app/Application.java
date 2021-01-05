@@ -22,19 +22,24 @@ public class Application{
         before("*", Filters.addTrailingSlashes);
         
         //Set up routes
-        // get(Path.Web.USER_LOGIN, UserController.serveLoginPage);
-        post(Path.Web.USER_LOGIN, UserController.handleLoginPost);
+	    post(Path.Web.USER_LOGIN, UserController.handleLoginPost);
         get(Path.Web.USER_RIDE, UserController.fetchRideFare);
         post(Path.Web.USER_RIDE, UserController.bookRide);
         put(Path.Web.USER_RIDE, UserController.updateRideDestination);
         delete(Path.Web.USER_RIDE, UserController.finishRide);
 
-        // get(Path.Web.DRIVER_LOGIN, DriverController.serveLoginPage);
         post(Path.Web.DRIVER_LOGIN, DriverController.handleLoginPost);
         get(Path.Web.DRIVER_RIDE, DriverController.fetchNearestRide);
         post(Path.Web.DRIVER_RIDE, DriverController.acceptRide);
+        
         //Close MongoDB connection
-        //ConnectDB.close();
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+        	public void run() {
+        		System.out.println("Closing MongoDB connection...");
+        		ConnectDB.close();
+        		System.out.println("Application Shutdown.");
+        	}
+        });
 	}
 	
 }
